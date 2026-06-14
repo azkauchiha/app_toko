@@ -1,99 +1,48 @@
 name: Build Flutter APK
 
 on:
-  push:
-    branches: [ main, master, develop ]
-  pull_request:
-    branches: [ main, master, develop ]
-  workflow_dispatch:
+workflow_dispatch:
+push:
+branches:
+- main
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: 📥 Checkout code
-      uses: actions/checkout@v4
+build:
+runs-on: ubuntu-latest
 
-    - name: 🎯 Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.16.0'
-        channel: 'stable'
-        cache: true
+```
+steps:
+  - name: Checkout
+    uses: actions/checkout@v4
 
-    - name: 📦 Get dependencies
-      run: |
-        cd app_toko_extracted
-        flutter pub get
+  - name: Setup Java
+    uses: actions/setup-java@v4
+    with:
+      distribution: temurin
+      java-version: '17'
 
-    - name: 🔍 Analyze code
-      run: |
-        cd app_toko_extracted
-        flutter analyze
+  - name: Setup Flutter
+    uses: subosito/flutter-action@v2
+    with:
+      channel: stable
+      cache: true
 
-    - name: 🧪 Run tests
-      run: |
-        cd app_toko_extracted
-        flutter test 2>/dev/null || true
+  - name: Flutter Version
+    run: flutter --version
 
-    - name: 🔨 Build APK (Release)
-      run: |
-        cd app_toko_extracted
-        flutter build apk \
-          --release \
-          --target-platform android-arm,android-arm64,android-x86,android-x86_64 \
-          --split-per-abi
+  - name: Get Dependencies
+    run: flutter pub get
 
-    - name: 📝 Get APK info
-      run: |
-        cd app_toko_extracted
-        ls -lh build/app/outputs/flutter-apk/
-        echo ""
-        echo "✅ Build Complete!"
+  - name: Analyze
+    run: flutter analyze
 
-    - name: 📤 Upload APK Artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: flutter-apks
-        path: |
-          app_toko_extracted/build/app/outputs/flutter-apk/app-*.apk
-        retention-days: 30
+  - name: Build APK
+    run: flutter build apk --release
 
-    - name: 📤 Upload Release APK
-      uses: actions/upload-artifact@v3
-      with:
-        name: app-release-apk
-        path: app_toko_extracted/build/app/outputs/flutter-apk/app-release.apk
-        retention-days: 30
+  - name: Upload APK
+    uses: actions/upload-artifact@v4
+    with:
+      name: app-release
+      path: build/app/outputs/flutter-apk/app-release.apk
+```
 
-    - name: 📊 Report Status
-      if: always()
-      run: |
-        echo "================================"
-        echo "✅ BUILD COMPLETED"
-        echo "================================"
-        echo ""
-        echo "📥 Check Artifacts tab above to download APK"
-        echo "⏱️ Build Time: ${{ job.duration }}"
-        echo ""
-    - name: ☕ Setup Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: temurin
-        java-version: '17'
-
-    - name: 📦 Install Dependencies
-      run: flutter pub get
-
-    - name: 🔍 Flutter Doctor
-      run: flutter doctor -v
-
-    - name: 🏗 Build APK
-      run: flutter build apk --release
-
-    - name: 📤 Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-release
-        path: build/app/outputs/flutter-apk/app-release.apk
